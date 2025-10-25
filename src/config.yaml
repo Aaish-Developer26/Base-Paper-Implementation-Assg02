@@ -1,0 +1,34 @@
+model:
+  name: "ViT-B-32"        # open_clip model
+  pretrained: "laion2b_s34b_b79k"
+  image_size: 224
+
+paths:
+  data_root: "data"
+  cache_root: "cache"
+  figs_root: "reports/figures"
+
+
+build_bank:
+  augment:
+    jpeg_qualities: [85]
+    resize_scales: [1.0]
+    blur_sigmas: [0.0]
+  max_per_class: 10   # 10 real + 10 fake from your 20k+ folders
+
+detect:
+  k: 5
+  alpha: 0.5
+  use_mahalanobis: false    # ← add this line
+  tta:
+    enable: false
+
+eval:
+  max_per_class: 20
+  metrics: ["auroc", "accuracy", "f1"]
+  plot_roc: true
+  stress:
+    jpeg_qualities: [95, 85, 70]   # add compression
+    resize_scales: [1.0, 0.75]     # downscale
+    blur_sigmas: [0.0, 1.0]        # mild blur
+ 

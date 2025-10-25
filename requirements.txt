@@ -1,0 +1,30 @@
+# Use the CPU wheels for PyTorch (works on Windows/macOS/Linux)
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Core runtime
+torch
+torchvision
+torchaudio
+
+# CLIP encoder
+open-clip-torch
+
+# ML + utils
+scikit-learn
+numpy
+scipy
+pillow
+opencv-python
+pyyaml
+tqdm
+rich
+
+# Plotting & analysis
+matplotlib
+seaborn
+umap-learn
+
+# (Optional) for grabbing a few diffusion fakes in the demo step
+datasets
+huggingface-hub
+safetensors

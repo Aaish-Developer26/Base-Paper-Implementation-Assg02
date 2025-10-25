@@ -1,0 +1,54 @@
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Python build/cache ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Environments ---
+.venv/
+venv/
+.env
+*.env
+.python-version
+
+# --- IDEs/Editors ---
+.vscode/
+.idea/
+*.code-workspace
+
+# --- Project data/artifacts ---
+# Ignore large/raw data; keep tiny test samples.
+data/**
+!data/.gitkeep
+!data/README.md
+!data/test/**
+!data/test/.gitkeep
+
+# Feature bank / intermediate caches
+cache/**
+!cache/.gitkeep
+
+# Checkpoints / experiment logs (if later added)
+checkpoints/**
+runs/**
+wandb/**
+tensorboard/**
+*.ckpt
+
+# --- Hugging Face / model hub caches (if appear locally) ---
+# (Global user caches usually live outside the repo; these are defensive.)
+hf_cache/
+huggingface/
+transformers_cache/
