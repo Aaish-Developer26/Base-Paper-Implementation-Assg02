@@ -21,11 +21,18 @@ def shrinkage_cov(X, eps=1e-3):
     return cov
 
 
-def main():
-    # read config with utf-8 (Windows-safe)
-    with open("src/config.yaml", "r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-
+def build_bank(cfg, use_augmentation=True, cache_suffix=""):
+    """
+    Build support bank with optional augmentation.
+    
+    Args:
+        cfg: Configuration dictionary
+        use_augmentation: If False, only use original images (vanilla baseline)
+        cache_suffix: Suffix for cache file (e.g., "_vanilla" or "_cacnn")
+    
+    Returns:
+        dict: Bank data with features, labels, centroids, covariance
+    """
     data_root = Path(cfg["paths"]["data_root"])
     cache_root = Path(cfg["paths"]["cache_root"])
     cache_root.mkdir(parents=True, exist_ok=True)
@@ -39,11 +46,30 @@ def main():
         raise RuntimeError("No images found for one of the classes. "
                            "Ensure data/real and data/fake contain images.")
 
-    # Minimal augmentation grid (ideally single values for speed)
+    # Get augmentation parameters
     aug = cfg["build_bank"]["augment"]
-    jpeg_qualities = aug.get("jpeg_qualities", [85])
-    resize_scales  = aug.get("resize_scales",  [1.0])
-    blur_sigmas    = aug.get("blur_sigmas",    [0.0])
+    
+    if use_augmentation:
+        # CACNN: Use augmentation grid
+        jpeg_qualities = aug.get("jpeg_qualities", [85])
+        resize_scales  = aug.get("resize_scales",  [1.0])
+        blur_sigmas    = aug.get("blur_sigmas",    [0.0])
+        method_name = "CACNN (with augmentation)"
+    else:
+        # Vanilla: Only original images (no augmentation)
+        jpeg_qualities = [100]  # Original quality
+        resize_scales  = [1.0]  # Original size
+        blur_sigmas    = [0.0]  # No blur
+        method_name = "Vanilla CLIP-kNN (no augmentation)"
+
+    print(f"\nBuilding {method_name}...")
+    print(f"  Real images: {len(real_paths)}")
+    print(f"  Fake images: {len(fake_paths)}")
+    
+    if use_augmentation:
+        print(f"  Augmentations: JPEG {jpeg_qualities}, Resize {resize_scales}, Blur {blur_sigmas}")
+    else:
+        print(f"  No augmentation (baseline)")
 
     fzr = CLIPFeaturizer(**cfg["model"])
 
@@ -61,8 +87,63 @@ def main():
     mu_r, mu_f = compute_centroids(X, y)
     Sigma = shrinkage_cov(X)
 
-    np.savez(cache_root / "bank.npz", X=X, y=y, mu_r=mu_r, mu_f=mu_f, Sigma=Sigma)
-    print(f"Bank built: X={X.shape}, real={int((y==0).sum())}, fake={int((y==1).sum())}")
+    # Save with appropriate suffix
+    cache_file = cache_root / f"bank{cache_suffix}.npz"
+    np.savez(cache_file, X=X, y=y, mu_r=mu_r, mu_f=mu_f, Sigma=Sigma)
+    
+    print(f"✓ Bank built: {X.shape[0]} features ({int((y==0).sum())} real, {int((y==1).sum())} fake)")
+    print(f"  Saved to: {cache_file}\n")
+    
+    return {
+        'X': X, 
+        'y': y, 
+        'mu_r': mu_r, 
+        'mu_f': mu_f, 
+        'Sigma': Sigma,
+        'cache_file': cache_file
+    }
+
+
+def main():
+    """
+    Build both vanilla and CACNN support banks for comparison.
+    """
+    # read config with utf-8 (Windows-safe)
+    with open("src/config.yaml", "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+
+    # Check if comparison mode is enabled
+    run_comparison = cfg.get("experiment", {}).get("run_comparison", False)
+    
+    if run_comparison:
+        print("=" * 70)
+        print("BUILDING BOTH VANILLA AND CACNN BANKS FOR COMPARISON")
+        print("=" * 70)
+        
+        # Build vanilla baseline (no augmentation)
+        vanilla_bank = build_bank(cfg, use_augmentation=False, cache_suffix="_vanilla")
+        
+        # Build CACNN (with augmentation)
+        cacnn_bank = build_bank(cfg, use_augmentation=True, cache_suffix="_cacnn")
+        
+        print("=" * 70)
+        print("SUMMARY")
+        print("=" * 70)
+        print(f"Vanilla bank: {vanilla_bank['X'].shape[0]} features")
+        print(f"CACNN bank:   {cacnn_bank['X'].shape[0]} features")
+        print(f"Augmentation factor: {cacnn_bank['X'].shape[0] / vanilla_bank['X'].shape[0]:.1f}x")
+        print("=" * 70)
+        
+    else:
+        # Normal mode: only build CACNN
+        print("=" * 70)
+        print("BUILDING CACNN SUPPORT BANK (SINGLE MODE)")
+        print("=" * 70)
+        print("Note: To build both vanilla and CACNN for comparison,")
+        print("      set 'experiment.run_comparison: true' in config.yaml")
+        print("=" * 70)
+        
+        build_bank(cfg, use_augmentation=True, cache_suffix="")
 
 
 if __name__ == "__main__":
