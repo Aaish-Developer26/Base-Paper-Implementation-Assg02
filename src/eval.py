@@ -155,11 +155,11 @@ def print_results(results, method_name=""):
 
 def print_comparison_table(results_dict):
     """Print comparison table between methods"""
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 90)
     print("PERFORMANCE COMPARISON")
-    print("=" * 80)
-    print(f"{'Scenario':<25} {'Vanilla':<15} {'CACNN':<15} {'Improvement':<15}")
-    print("-" * 80)
+    print("=" * 90)
+    print(f"{'Scenario':<20} {'Metric':<12} {'Vanilla':<15} {'CACNN':<15} {'Improvement':<15}")
+    print("-" * 90)
     
     scenarios = [k for k in results_dict.keys() if k.startswith('vanilla_')]
     
@@ -170,14 +170,33 @@ def print_comparison_table(results_dict):
         cacnn_key = scenario.replace('vanilla_', 'cacnn_')
         
         if cacnn_key in results_dict:
-            v_auroc = results_dict[vanilla_key]['auroc']
-            c_auroc = results_dict[cacnn_key]['auroc']
-            improvement = ((c_auroc - v_auroc) / v_auroc) * 100 if v_auroc > 0 else 0
+            v_res = results_dict[vanilla_key]
+            c_res = results_dict[cacnn_key]
             
-            print(f"{scenario_name:<25} {v_auroc:.3f}         {c_auroc:.3f}         "
-                  f"{'+' if improvement > 0 else ''}{improvement:.1f}%")
+            # Print AUROC
+            v_auroc = v_res['auroc']
+            c_auroc = c_res['auroc']
+            auroc_imp = ((c_auroc - v_auroc) / v_auroc) * 100 if v_auroc > 0 else 0
+            print(f"{scenario_name:<20} {'AUROC':<12} {v_auroc:.3f}         {c_auroc:.3f}         "
+                  f"{'+' if auroc_imp > 0 else ''}{auroc_imp:.1f}%")
+            
+            # Print Accuracy
+            v_acc = v_res['accuracy']
+            c_acc = c_res['accuracy']
+            acc_imp = ((c_acc - v_acc) / v_acc) * 100 if v_acc > 0 else 0
+            print(f"{'':<20} {'Accuracy':<12} {v_acc:.3f}         {c_acc:.3f}         "
+                  f"{'+' if acc_imp > 0 else ''}{acc_imp:.1f}%")
+            
+            # Print F1
+            v_f1 = v_res['f1']
+            c_f1 = c_res['f1']
+            f1_imp = ((c_f1 - v_f1) / v_f1) * 100 if v_f1 > 0 else float('inf')
+            f1_imp_str = f"+∞" if f1_imp == float('inf') else f"{'+' if f1_imp > 0 else ''}{f1_imp:.1f}%"
+            print(f"{'':<20} {'F1 Score':<12} {v_f1:.3f}         {c_f1:.3f}         {f1_imp_str}")
+            print()
     
-    print("=" * 80)
+    print("=" * 90)
+
 
 
 def main():
